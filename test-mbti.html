@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual MBTI Personality Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+        rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .option-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .option-card.selected {
+            border-color: #6366f1;
+            background-color: #f5f3ff;
+            transform: scale(1.02);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2);
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen pb-20">
+
+    <!-- Header -->
+    <header class="py-12 text-center">
+        <h1
+            class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 mb-2">
+            The Visual Vibe Test
+        </h1>
+        <p class="text-slate-500 max-w-md mx-auto px-4">
+            Our AI analyzes your aesthetic preferences to determine your MBTI personality type.
+        </p>
+    </header>
+
+    <main class="max-w-2xl mx-auto px-4">
+        <div id="quiz-container" class="space-y-8">
+            <!-- Questions will be injected here -->
+        </div>
+
+        <!-- Submission Section -->
+        <section class="mt-12 p-8 glass-card rounded-3xl shadow-xl">
+            <h3 class="text-xl font-bold mb-4 text-center">Ready for your results?</h3>
+            <div class="space-y-4">
+                <input type="email" id="user-email" placeholder="Enter your email address"
+                    class="w-full p-4 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                
+                <div class="p-4 bg-amber-50 rounded-xl border border-amber-100 flex items-start gap-3">
+                    <svg class="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    <p class="text-xs text-amber-800 leading-relaxed">
+                        <strong>Disclaimer:</strong> AI analysis and email delivery can take up to 60 seconds depending on server load. Please wait for the confirmation message below before closing this page.
+                    </p>
+                </div>
+
+                <button id="submit-btn" onclick="processQuiz()"
+                    class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-indigo-200 transition-all flex justify-center items-center gap-3">
+                    <span>Analyze My Results</span>
+                    <div id="btn-loader" class="loader hidden"></div>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-400 mt-4 text-center">
+                Results will be displayed here and sent to your inbox.
+            </p>
+        </section>
+
+        <!-- Results Display -->
+        <section id="results-display" class="mt-12 hidden">
+            <div class="p-8 bg-white rounded-3xl border-2 border-indigo-100 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16"></div>
+                <span class="text-indigo-600 font-bold tracking-widest uppercase text-sm">Your Personality Type</span>
+                <h2 id="res-mbti" class="text-6xl font-extrabold text-indigo-900 my-4"></h2>
+                <div class="h-1 w-20 bg-indigo-600 mb-6"></div>
+                <p id="res-analysis" class="text-slate-700 leading-relaxed text-lg"></p>
+
+                <div class="mt-8 p-4 bg-indigo-50 rounded-xl flex items-center gap-3">
+                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                    <span class="text-indigo-700 text-sm font-semibold">Sent to your email! Check your spam if not
+                        found.</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // REPLACE THIS WITH YOUR n8n PRODUCTION OR TEST WEBHOOK
+        const N8N_WEBHOOK_URL = 'https://n8n.gregdoesdev.xyz/webhook/mbti-quiz';
+
+        const allQuestions = [
+            { id: 1, text: "Which landscape feels like 'home'?", opts: ["Misty Mountains", "Neon Cityscape"], keys: ["nature", "urban"] },
+            { id: 2, text: "Choose your focus style.", opts: ["Minimalist Order", "Creative Clutter"], keys: ["organized", "spontaneous"] },
+            { id: 3, text: "How do you spend a Friday night?", opts: ["Solo Reading", "Group Concert"], keys: ["introverted", "extroverted"] },
+            { id: 4, text: "Which pattern draws your eye?", opts: ["Geometric Symmetry", "Flowing Abstract"], keys: ["logical", "intuitive"] },
+            { id: 5, text: "Your ideal digital vibe.", opts: ["Clean Coding", "Digital Painting"], keys: ["systematic", "artistic"] },
+            { id: 6, text: "Choose a mystery door.", opts: ["The Ancient Library", "The High-Tech Lab"], keys: ["tradition", "innovation"] },
+            { id: 7, text: "How do you decide?", opts: ["Thinking with Head", "Feeling with Heart"], keys: ["thinker", "feeler"] },
+            { id: 8, text: "Your path in life.", opts: ["The Clear Road", "The Hidden Forest Path"], keys: ["planner", "explorer"] },
+            { id: 9, text: "Preferred lighting environment?", opts: ["Soft Natural Glow", "Vibrant Studio RGB"], keys: ["soft", "vibrant"] },
+            { id: 10, text: "Coffee shop atmosphere?", opts: ["Quiet Corner Nook", "Social Communal Table"], keys: ["quiet", "social"] },
+            { id: 11, text: "Inspiration source?", opts: ["Deep Solitude", "Active Discussion"], keys: ["solitude", "discussion"] },
+            { id: 12, text: "Problem solving approach?", opts: ["Data & Facts", "Gut Feeling"], keys: ["data", "intuition"] },
+            { id: 13, text: "Weekend getaway?", opts: ["Cozy Cabin", "Luxury Penthouse"], keys: ["cozy", "luxury"] },
+            { id: 14, text: "Architecture style?", opts: ["Historical Classic", "Ultra Futuristic"], keys: ["classic", "futuristic"] },
+            { id: 15, text: "Work desk setup?", opts: ["Precise Alignment", "Organized Chaos"], keys: ["precise", "chaos"] },
+            { id: 16, text: "Social battery charging?", opts: ["Being Alone", "Group Energy"], keys: ["alone", "group"] },
+            { id: 17, text: "Fashion sense?", opts: ["Timeless Basics", "Bold Statement"], keys: ["timeless", "bold"] },
+            { id: 18, text: "Project management?", opts: ["Checklist First", "Go with the Flow"], keys: ["checklist", "flow"] },
+            { id: 19, text: "Travel preference?", opts: ["Strict Itinerary", "Wandering Aimlessly"], keys: ["itinerary", "wondering"] },
+            { id: 20, text: "Social media use?", opts: ["Silent Observer", "Active Participant"], keys: ["observer", "participant"] },
+            { id: 21, text: "Ideal workspace view?", opts: ["Staring at Trees", "Busy Intersection"], keys: ["trees", "intersection"] },
+            { id: 22, text: "Communication style?", opts: ["Written Text", "Spoken Word"], keys: ["written", "spoken"] },
+            { id: 23, text: "Creative process?", opts: ["Structured Method", "Sudden Inspiration"], keys: ["structured", "sudden"] },
+            { id: 24, text: "Learning style?", opts: ["Reading Theory", "Hands-on Trial"], keys: ["theory", "practical"] },
+            { id: 25, text: "Event planning?", opts: ["Months Ahead", "Last Minute"], keys: ["months", "last-minute"] },
+            { id: 26, text: "Interior Design?", opts: ["Boho Eclectic", "Modern Industrial"], keys: ["boho", "industrial"] },
+            { id: 27, text: "Decision speed?", opts: ["Methodical Sleep-on-it", "Instant Snap"], keys: ["methodical", "instant"] },
+            { id: 28, text: "Reading preference?", opts: ["Non-Fiction Reality", "Fantasy Worlds"], keys: ["reality", "fantasy"] },
+            { id: 29, text: "Morning routine?", opts: ["Rigid Schedule", "Flexible Start"], keys: ["rigid", "flexible"] },
+            { id: 30, text: "Public speaking?", opts: ["Detailed Script", "General Bulletpoints"], keys: ["script", "bullets"] }
+        ];
+
+        let selections = {};
+        let currentQuestions = [];
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Build Quiz
+        function initQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = '';
+            selections = {};
+            
+            // Shuffle all and take 8
+            currentQuestions = shuffle([...allQuestions]).slice(0, 8);
+            
+            currentQuestions.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = 'glass-card p-6 rounded-3xl shadow-sm';
+                card.innerHTML = `
+                    <h3 class="text-lg font-bold mb-4">0${idx + 1}. ${q.text}</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="option-card cursor-pointer border-2 border-slate-100 rounded-2xl overflow-hidden" onclick="selectOpt(${q.id}, '${q.opts[0]}', this)">
+                            <img src="https://picsum.photos/seed/${q.keys[0]}/400/300" class="w-full h-32 object-cover" alt="A">
+                            <div class="p-3 text-center text-sm font-semibold">${q.opts[0]}</div>
+                        </div>
+                        <div class="option-card cursor-pointer border-2 border-slate-100 rounded-2xl overflow-hidden" onclick="selectOpt(${q.id}, '${q.opts[1]}', this)">
+                            <img src="https://picsum.photos/seed/${q.keys[1]}/400/300" class="w-full h-32 object-cover" alt="B">
+                            <div class="p-3 text-center text-sm font-semibold">${q.opts[1]}</div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        initQuiz();
+
+        function selectOpt(id, val, el) {
+            const siblings = el.parentElement.querySelectorAll('.option-card');
+            siblings.forEach(s => s.classList.remove('selected'));
+            el.classList.add('selected');
+            selections[id] = val;
+        }
+
+        async function processQuiz() {
+            const email = document.getElementById('user-email').value;
+            const btn = document.getElementById('submit-btn');
+            const loader = document.getElementById('btn-loader');
+
+            if (Object.keys(selections).length < 8) {
+                return alert("Please select an image for every question first!");
+            }
+            if (!email || !email.includes('@')) {
+                return alert("Please enter a valid email address.");
+            }
+
+            // UI Feedback
+            btn.disabled = true;
+            loader.classList.remove('hidden');
+
+            try {
+                const response = await fetch(N8N_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, answers: selections })
+                });
+
+                if (!response.ok) throw new Error('n8n responded with an error');
+
+                const data = await response.json();
+
+                // DATA PARSING LOGIC: Cleans up AI messiness
+                let finalData = {};
+
+                // If AI returns a string (often containing markdown)
+                if (typeof data.output === 'string') {
+                    const cleanText = data.output.replace(/```json|```/g, "").trim();
+                    try {
+                        finalData = JSON.parse(cleanText);
+                    } catch (e) {
+                        // Fallback if it's just raw text
+                        finalData = { mbti: "Analysis Complete", analysis: data.output };
+                    }
+                } else {
+                    // If n8n returns standard JSON
+                    finalData = data;
+                }
+
+                // Update UI
+                document.getElementById('res-mbti').innerText = finalData.mbti || "Result Ready";
+                document.getElementById('res-analysis').innerText = finalData.analysis || "Check your email for the full report.";
+                document.getElementById('results-display').classList.remove('hidden');
+                document.getElementById('results-display').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                console.error(err);
+                alert("The AI connection failed. Make sure your n8n workflow is 'Listening'!");
+            } finally {
+                btn.disabled = false;
+                loader.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+
+</html>
