@@ -1,0 +1,124 @@
+{
+  "name": "Visual MBTI Personality Analysis Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mbti-quiz",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e89d22e5-5a94-44bf-befa-ed04bcf4ef8d",
+      "name": "Webhook",
+      "webhookId": "4be8eb54-b2c6-47dc-9387-8e0e2bbce088"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=The user chose these 8 visual elements: {{ JSON.stringify($('Webhook').item.json.body.answers) }}. \n\nBased on these choices, act as a psychologist and determine their 4-letter MBTI personality type. \nAnalyze the visual themes (e.g. nature vs urban, organized vs cluttered) to map to introversion/extroversion, sensing/intuition, thinking/feeling, and judging/perceiving.\n\nYou MUST return your response as a valid JSON object matching this exact format:\n{\n  \"mbti\": \"[INSERT 4-LETTER MBTI TYPE HERE]\", \n  \"analysis\": \"A brief 2-sentence explanation of why their visual choices resulted in this specific personality type.\"\n}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "6cfbd8d9-14d1-4bca-b022-bfa3ff1d51e5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        208
+      ],
+      "id": "ae01d158-0add-4037-bd38-7ed810c6927c",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "O9aPlwkAu8fX0eFW",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook').item.json.body.email }}",
+        "subject": "Your Visual MBTI Result",
+        "message": "=<div style=\"font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 30px; border-radius: 12px; background-color: #f8fafc; border: 1px solid #e2e8f0; color: #1e293b;\">\n    \n    <div style=\"text-align: center; margin-bottom: 30px;\">\n        <h1 style=\"color: #4f46e5; margin: 0; font-size: 28px;\">Your Visual Vibe Results</h1>\n        <p style=\"color: #64748b; font-size: 16px; margin-top: 8px;\">We've analyzed your aesthetic preferences!</p>\n    </div>\n\n    <div style=\"background-color: white; padding: 25px; border-radius: 8px; border-left: 5px solid #4f46e5; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);\">\n        <p style=\"text-transform: uppercase; font-size: 12px; font-weight: bold; color: #64748b; letter-spacing: 1.5px; margin: 0;\">Personality Type</p>\n        <h2 style=\"font-size: 42px; margin: 10px 0; color: #1e293b;\">\n            {{ JSON.parse($node[\"AI Agent\"].json.output.replace(/```json|```/gi, '').trim()).mbti }}\n        </h2>\n        \n        <div style=\"height: 1px; background-color: #e2e8f0; margin: 20px 0;\"></div>\n        \n        <h3 style=\"color: #334155; font-size: 18px; margin-top: 0;\">Your Analysis</h3>\n        <p style=\"line-height: 1.7; font-size: 16px; color: #475569;\">\n            {{ JSON.parse($node[\"AI Agent\"].json.output.replace(/```json|```/gi, '').trim()).analysis }}\n        </p>\n    </div>\n\n    <div style=\"text-align: center; margin-top: 30px; font-size: 13px; color: #94a3b8;\">\n        <p>This automated assessment was generated using n8n and AI.</p>\n    </div>\n\n</div>\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "9e8395a8-ca25-4d9d-874e-b25b4d7b3383",
+      "name": "Send a message",
+      "webhookId": "b96b8992-eef5-43d1-8755-5d9d0fcea0e7",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "dDEHmWmoEVigVx6v",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}
